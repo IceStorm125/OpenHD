@@ -69,6 +69,7 @@ void AirTelemetry::send_messages_ground_unit(std::vector<MavlinkMessage>& messag
   }
 }
 
+
 void AirTelemetry::on_messages_fc(std::vector<MavlinkMessage>& messages) {
   //openhd::log::get_default()->debug("on_messages_fc {}",messages.size());
   //debugMavlinkMessage(message.m,"AirTelemetry::onMessageFC");
@@ -232,6 +233,7 @@ void AirTelemetry::setup_uart() {
     options.baud_rate=m_air_settings->get_settings().fc_uart_baudrate;
     options.flow_control= m_air_settings->get_settings().fc_uart_flow_control;
     options.enable_reading= true;
+
     m_fc_serial->configure(options,"fc_ser",[this](std::vector<MavlinkMessage> messages) {
       this->on_messages_fc(messages);
     });
