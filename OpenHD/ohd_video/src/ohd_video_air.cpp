@@ -50,7 +50,7 @@ OHDVideoAir::OHDVideoAir(OHDPlatform platform1,std::vector<Camera> cameras,
   }
   if(m_opt_action_handler){
     m_opt_action_handler->action_request_bitrate_change_register([this](openhd::ActionHandler::LinkBitrateInformation lb){
-      this->handle_change_bitrate_request(lb);
+      // this->handle_change_bitrate_request(lb);
     });
     auto cb_armed=[this](bool armed){
           this->update_arming_state(armed);
@@ -226,7 +226,7 @@ std::vector<Camera> OHDVideoAir::discover_cameras(const OHDPlatform& platform) {
     // Always wait
     if(true) {
       const auto begin = std::chrono::steady_clock::now();
-      while (std::chrono::steady_clock::now() - begin <std::chrono::seconds(10)) {
+      while (std::chrono::steady_clock::now() - begin <std::chrono::seconds(1)) {
         if (cameras.size()>=n_wanted_cameras) {
           m_console->debug("Done waiting for camera(s),found {}",cameras.size());
           // break as soon as we have at least enough cameras
