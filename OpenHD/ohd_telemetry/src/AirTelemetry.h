@@ -23,6 +23,8 @@
 #include "openhd_link.hpp"
 #include "openhd_spdlog.h"
 
+#include "../../lib/wifibroadcast/src/HelperSources/SocketHelper.hpp"
+
 /**
  * OpenHD Air telemetry. Assumes a Ground instance running on the ground pi.
  */
@@ -92,6 +94,7 @@ class AirTelemetry : public MavlinkSystem{
   std::shared_ptr<spdlog::logger> m_console;
   // EXP - always on TCP mavlink server
   std::unique_ptr<TCPEndpoint> m_tcp_server = nullptr;
+  std::unique_ptr<SocketHelper::UDPForwarder> m_receiver_sender = nullptr;
 };
 
 #endif //OPENHD_TELEMETRY_AIRTELEMETRY_H

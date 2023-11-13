@@ -24,6 +24,8 @@ AirTelemetry::AirTelemetry(OHDPlatform platform,std::shared_ptr<openhd::ActionHa
   if(m_platform.platform_type==PlatformType::RaspberryPi){
     m_opt_gpio_control=std::make_unique<openhd::telemetry::rpi::GPIOControl>();
   }
+
+  m_receiver_sender = std::make_unique<SocketHelper::UDPForwarder>("192.168.2.25", 37260);
   // NOTE: We don't call set ready yet, since we have to wait until other modules have provided
   // all their paramters.
   m_generic_mavlink_param_provider->add_params(get_all_settings());
@@ -78,7 +80,9 @@ void AirTelemetry::on_messages_fc(std::vector<MavlinkMessage>& messages) {
 }
 
 void AirTelemetry::on_messages_ground_unit(std::vector<MavlinkMessage>& messages) {
-  //openhd::log::get_default()->debug("on_messages_ground_unit {}",messages.size());
+  openhd::log::get_default()->debug("on_messages_ground_unit {}",messages.size());
+  const uint8_t packet[3] = {1,2,3};
+  m_receiver_sender->forwardPacketViaUDP(packet, 3);
   // filter out heartbeats from the openhd ground unit,we do not need to send them to the FC
   std::vector<MavlinkMessage> filtered_messages_fc;
   for(const auto& msg:messages){
@@ -228,10 +232,11 @@ void AirTelemetry::setup_uart() {
   using namespace openhd::telemetry;
   if(m_air_settings->is_serial_enabled()){
     SerialEndpoint::HWOptions options{};
-    options.linux_filename=m_air_settings->get_settings().fc_uart_connection_type;
+    options.linux_filename=/*m_air_settings->get_settings().fc_uart_connection_type*/"/dev/ttyUSB0";
     options.baud_rate=m_air_settings->get_settings().fc_uart_baudrate;
     options.flow_control= m_air_settings->get_settings().fc_uart_flow_control;
     options.enable_reading= true;
+    std::cout << options.to_string() << std::endl;
     m_fc_serial->configure(options,"fc_ser",[this](std::vector<MavlinkMessage> messages) {
       this->on_messages_fc(messages);
     });
