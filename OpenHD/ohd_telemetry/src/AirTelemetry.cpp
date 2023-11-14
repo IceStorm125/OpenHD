@@ -81,8 +81,8 @@ void AirTelemetry::on_messages_fc(std::vector<MavlinkMessage>& messages) {
 
 void AirTelemetry::on_messages_ground_unit(std::vector<MavlinkMessage>& messages) {
   openhd::log::get_default()->debug("on_messages_ground_unit {}",messages.size());
-  const uint8_t packet[3] = {1,2,3};
-  m_receiver_sender->forwardPacketViaUDP(packet, 3);
+  const uint8_t packet[11] = {0x55, 0x66, 0x01, 0x01, 0x00, 0x00, 0x00, 0x05, 0x01, 0x8D, 0x64};
+  m_receiver_sender->forwardPacketViaUDP(packet, 11);
   // filter out heartbeats from the openhd ground unit,we do not need to send them to the FC
   std::vector<MavlinkMessage> filtered_messages_fc;
   for(const auto& msg:messages){

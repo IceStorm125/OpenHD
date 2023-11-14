@@ -314,7 +314,10 @@ std::vector<Camera> OHDVideoAir::discover_cameras(const OHDPlatform& platform) {
     OHDUtil::keep_alive_until_sigterm();
   }
   if(start_custom_unamanged_camera_service){
+    openhd::log::get_default()->warn("Start custom pipeline");
+    // std::system("gst-launch-1.0 rtspsrc location=rtsp://192.168.2.25:8554/main.264 latency=0 ! rtph264depay ! h264parse config-interval=-1 ! rtph264pay ! udpsink port=5500 host=127.0.0.1");
     OHDUtil::run_command("systemctl",{"start",CUSTOM_UNMANAGED_CAMERA_SERVICE_NAME});
+    OHDUtil::run_command("gst-launch-1.0",{"rtspsrc location=rtsp://192.168.2.25:8554/main.264 latency=0 ! rtph264depay ! h264parse config-interval=-1 ! rtph264pay ! udpsink port=5500 host=127.0.0.1 > /dev/null &"});
   }
   return cameras;
 }

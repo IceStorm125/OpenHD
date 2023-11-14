@@ -19,9 +19,9 @@ struct Config{
   std::vector<std::string> WIFI_WB_LINK_CARDS{};
   std::string WIFI_WIFI_HOTSPOT_CARD;
   // CAMERAS
-  bool CAMERA_ENABLE_AUTODETECT = true;
-  int CAMERA_N_CAMERAS;
-  std::string CAMERA_CAMERA0_TYPE;
+  bool CAMERA_ENABLE_AUTODETECT = false;
+  int CAMERA_N_CAMERAS = 1;
+  std::string CAMERA_CAMERA0_TYPE = "CUSTOM_UNMANAGED_CAMERA";
   std::string CAMERA_CAMERA1_TYPE;
   // NETWORKING
   std::string NW_ETHERNET_CARD=RPI_ETHERNET_ONLY;
