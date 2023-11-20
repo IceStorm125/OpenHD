@@ -24,13 +24,17 @@ GroundTelemetry::GroundTelemetry(OHDPlatform platform,
                                      "127.0.0.1",
                                      // and we accept udp data from anybody on 14551
                                      "0.0.0.0");
+  // m_gcs_endpoint->addAnotherDestIpAddress("192.168.2.106");
   m_gcs_endpoint->registerCallback([this](std::vector<MavlinkMessage> messages) {
+    m_console->info("UDP");    
     on_messages_ground_station_clients(messages);
   });
+  
   m_tcp_server=std::make_unique<TCPEndpoint>(TCPEndpoint::Config{TCPEndpoint::DEFAULT_PORT});//1445
   //m_tcp_server= nullptr;
   if(m_tcp_server){
     m_tcp_server->registerCallback([this](std::vector<MavlinkMessage> messages) {
+      m_console->info("TCP");
       on_messages_ground_station_clients(messages);
     });
   }
@@ -70,6 +74,14 @@ GroundTelemetry::~GroundTelemetry() {
 void GroundTelemetry::on_messages_air_unit(const std::vector<MavlinkMessage>& messages) {
   // All messages we get from the Air pi (they might come from the AirPi itself or the FC connected to the air pi)
   // get forwarded straight to all the client(s) connected to the ground station.
+
+  for(auto msg:messages){
+    if(msg.m.msgid == MAVLINK_MSG_ID_DATA32){
+      m_gcs_endpoint->sendMessages(messages);
+    }
+  }
+
+
   send_messages_ground_station_clients(messages);
   // Note: No OpenHD component ever talks to another OpenHD component or the FC, so we do not
   // need to do anything else here.
@@ -87,7 +99,6 @@ void GroundTelemetry::on_messages_air_unit(const std::vector<MavlinkMessage>& me
 }
 
 void GroundTelemetry::on_messages_ground_station_clients(const std::vector<MavlinkMessage>& messages) {
-  //debugMavlinkMessages(messages,"GSC");
   // All messages from the ground station(s) are forwarded to the air unit, unless they have a target sys id
   // of the ohd ground unit itself
   auto [generic,local_only]=split_into_generic_and_local_only(messages,OHD_SYS_ID_GROUND);
