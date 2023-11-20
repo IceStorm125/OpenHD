@@ -25,7 +25,19 @@ AirTelemetry::AirTelemetry(OHDPlatform platform,std::shared_ptr<openhd::ActionHa
     m_opt_gpio_control=std::make_unique<openhd::telemetry::rpi::GPIOControl>();
   }
 
-  m_receiver_sender = std::make_unique<SocketHelper::UDPForwarder>("192.168.2.25", 37260);
+  // m_receiver_sender = std::make_unique<SocketHelper::UDPForwarder>("192.168.2.25", 37260);
+  m_receiver = std::make_unique<SocketHelper::UDPReceiver>("127.0.0.1", 12344, [this](const uint8_t *payload, const std::size_t payloadSize){
+    mavlink_message_t msg;
+    mavlink_msg_data32_pack(2, 1, &msg, 1, payloadSize, payload);
+    
+    MavlinkMessage m{msg};
+    std::vector<MavlinkMessage> messages{m};
+
+    std::lock_guard<std::mutex> guard(m_components_lock);   
+    send_messages_ground_unit(messages);
+  });
+  m_receiver->runInBackground();
+
   // NOTE: We don't call set ready yet, since we have to wait until other modules have provided
   // all their paramters.
   m_generic_mavlink_param_provider->add_params(get_all_settings());
@@ -59,11 +71,15 @@ void AirTelemetry::send_messages_ground_unit(std::vector<MavlinkMessage>& messag
     for(auto & msg:messages){
       const auto msg_id=msg.m.msgid;
       if(msg_id==MAVLINK_MSG_ID_PARAM_EXT_VALUE
-          || msg_id==MAVLINK_MSG_ID_PARAM_VALUE) {
+          || msg_id==MAVLINK_MSG_ID_PARAM_VALUE
+          || msg_id==170 ) {
         msg.recommended_n_injections=2;
       }
+
     }
+
     m_wb_endpoint->sendMessages(messages);
+
   }
   // Not technically correct, but works
   if(m_tcp_server){
@@ -80,13 +96,21 @@ void AirTelemetry::on_messages_fc(std::vector<MavlinkMessage>& messages) {
 }
 
 void AirTelemetry::on_messages_ground_unit(std::vector<MavlinkMessage>& messages) {
-  openhd::log::get_default()->debug("on_messages_ground_unit {}",messages.size());
-  const uint8_t packet[11] = {0x55, 0x66, 0x01, 0x01, 0x00, 0x00, 0x00, 0x05, 0x01, 0x8D, 0x64};
-  m_receiver_sender->forwardPacketViaUDP(packet, 11);
   // filter out heartbeats from the openhd ground unit,we do not need to send them to the FC
+  openhd::log::get_default()->debug("on_messages_ground_unit {}",messages.size());
+
   std::vector<MavlinkMessage> filtered_messages_fc;
   for(const auto& msg:messages){
     const mavlink_message_t &m = msg.m;
+    openhd::log::get_default()->debug("Message id: {}", m.msgid);
+    if(static_cast<int>(m.msgid) == MAVLINK_MSG_ID_DATA32)
+    {
+      mavlink_data32_t data;
+      mavlink_msg_data32_decode(&m, &data);
+      const uint8_t *packet = data.data;
+      m_receiver->forwardPacketViaUDP("192.168.2.25", 37260, packet, data.len);
+    }
+
     if(static_cast<int>(m.msgid) == MAVLINK_MSG_ID_HEARTBEAT && m.sysid == OHD_SYS_ID_GROUND)continue;
     filtered_messages_fc.push_back(msg);
   }

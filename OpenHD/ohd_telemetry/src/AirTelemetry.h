@@ -95,6 +95,7 @@ class AirTelemetry : public MavlinkSystem{
   // EXP - always on TCP mavlink server
   std::unique_ptr<TCPEndpoint> m_tcp_server = nullptr;
   std::unique_ptr<SocketHelper::UDPForwarder> m_receiver_sender = nullptr;
+  std::unique_ptr<SocketHelper::UDPReceiver> m_receiver = nullptr;
 };
 
 #endif //OPENHD_TELEMETRY_AIRTELEMETRY_H
